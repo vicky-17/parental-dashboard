@@ -5,7 +5,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 let marker;
-let firstZoom = true; // To track if we should zoom in initially
 
 async function fetchData() {
     try {
@@ -19,10 +18,18 @@ async function fetchData() {
 
         const latest = data[0];
 
-        // 1. Update Basic Stats (Real Battery)
+        // 1. Update Basic Stats with 12-Hour Format
         document.getElementById('deviceId').innerText = latest.deviceId || "Unknown";
         document.getElementById('batteryLevel').innerText = latest.batteryLevel + "%";
-        document.getElementById('lastSeen').innerText = new Date(latest.timestamp).toLocaleTimeString();
+        
+        // Time Formatting (12h format)
+        const dateObj = new Date(latest.timestamp);
+        const timeString = dateObj.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true 
+        });
+        document.getElementById('lastSeen').innerText = timeString;
 
         // 2. Map & Location Logic
         const lat = latest.latitude;
@@ -36,28 +43,38 @@ async function fetchData() {
                 marker = L.marker([lat, lng]).addTo(map);
             }
 
-            // ZOOM to location (Auto-center)
-            // If it's the first load, or if you want it to always follow the child:
-            map.setView([lat, lng], 16); // 16 is a high zoom level (street view)
+            // Update View
+            map.setView([lat, lng], 16);
 
-            // 3. Get Human Readable Address (Reverse Geocoding)
-            // We use OpenStreetMap Nominatim API (Free)
+            // Update "Open in Google Maps" Button
+            const googleMapsBtn = document.getElementById('googleMapsBtn');
+            googleMapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+            // Reverse Geocoding
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
                 .then(res => res.json())
                 .then(addressData => {
                     const address = addressData.display_name || "Unknown Location";
-                    // Display this address in the UI (You need to add an element with ID 'addressField' in index.html)
                     if(document.getElementById('addressField')) {
                         document.getElementById('addressField').innerText = address;
                     }
                 });
         }
 
-        // 4. Update App Usage List
+        // 3. Update App Usage List (Sorted by Time)
         const appListContainer = document.getElementById('appList');
+        
         if (latest.appUsage && latest.appUsage.length > 0) {
-            appListContainer.innerHTML = latest.appUsage
-                .map(app => `<div class="app-item">${app}</div>`)
+            // Sort by 'minutes' descending
+            const sortedApps = latest.appUsage.sort((a, b) => b.minutes - a.minutes);
+            
+            appListContainer.innerHTML = sortedApps
+                .map(app => `
+                    <div class="app-item">
+                        <span class="app-name">${app.name}</span>
+                        <span class="app-time">${app.duration}</span>
+                    </div>
+                `)
                 .join('');
         } else {
             appListContainer.innerHTML = "<div class='app-item'>No usage data yet</div>";
@@ -68,6 +85,6 @@ async function fetchData() {
     }
 }
 
-// Refresh every 10 seconds (Dashboard doesn't need to ping as fast as the phone sends)
+// Refresh every 10 seconds
 setInterval(fetchData, 10000);
 fetchData();

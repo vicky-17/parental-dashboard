@@ -6,14 +6,19 @@ if (!mongoose.connection.readyState) {
     mongoose.connect(MONGODB_URI);
 }
 
-// Updated Schema
+// Updated Schema to support App Usage with Time
 const LocationSchema = new mongoose.Schema({
     deviceId: String,
     latitude: Number,
     longitude: Number,
     timestamp: { type: Date, default: Date.now },
     batteryLevel: Number,
-    appUsage: [String] // Array of strings for app usage
+    // Changed from [String] to Array of Objects to store time for sorting
+    appUsage: [{
+        name: String,
+        duration: String, // e.g., "1h 30m" (for display)
+        minutes: Number   // e.g., 90 (for sorting)
+    }] 
 });
 
 const Location = mongoose.models.Location || mongoose.model('Location', LocationSchema);
@@ -27,7 +32,7 @@ module.exports = async (req, res) => {
                 latitude: data.latitude,
                 longitude: data.longitude,
                 batteryLevel: data.batteryLevel,
-                appUsage: data.appUsage
+                appUsage: data.appUsage // Expecting [{name: "Youtube", duration: "10m", minutes: 10}, ...]
             });
 
             await newLocation.save();

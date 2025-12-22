@@ -7,18 +7,23 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Add specific style for the app list here or in style.css */
         .app-list-container {
-            max-height: 200px;
+            max-height: 300px; /* Made slightly taller */
             overflow-y: auto;
             background: #f9f9f9;
             padding: 10px;
             border-radius: 8px;
         }
         .app-item {
-            padding: 5px;
+            display: flex;
+            justify-content: space-between; /* To separate Name and Time */
+            padding: 8px 5px;
             border-bottom: 1px solid #ddd;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+        }
+        .app-time {
+            font-weight: bold;
+            color: #2563eb;
         }
         #addressField {
             font-weight: bold;
@@ -26,6 +31,18 @@
             margin-bottom: 10px;
             display: block;
         }
+        /* Button style adjustment */
+        .btn-map {
+            margin-top: 10px;
+            display: inline-block;
+            background: #34a853; /* Google Maps Greenish color */
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        .btn-map:hover { background: #2e8b46; }
     </style>
 </head>
 <body>
@@ -37,30 +54,37 @@
         </header>
 
         <div class="dashboard-grid">
-            <div class="card map-card">
-                <h2>📍 Current Location</h2>
-                <span id="addressField">Locating...</span>
-                <div id="map"></div>
+            <div class="left-col">
+                <div class="card map-card">
+                    <h2>📍 Current Location</h2>
+                    <span id="addressField">Locating...</span>
+                    <div id="map"></div>
+                    <a id="googleMapsBtn" href="#" target="_blank" class="btn-map">Open in Google Maps</a>
+                </div>
             </div>
 
-            <div class="card stats-card">
-                <h2>📱 Device Status</h2>
-                <div class="stat-item">
-                    <span class="label">Device ID</span>
-                    <span class="value" id="deviceId">--</span>
+            <div class="right-col">
+                <div class="card stats-card">
+                    <h2>📱 Device Status</h2>
+                    <div class="stat-item">
+                        <span class="label">Device ID</span>
+                        <span class="value" id="deviceId">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Battery</span>
+                        <span class="value" id="batteryLevel">--%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Last Seen</span>
+                        <span class="value" id="lastSeen">--</span>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <span class="label">Battery</span>
-                    <span class="value" id="batteryLevel">--%</span>
-                </div>
-                <div class="stat-item">
-                    <span class="label">Last Seen</span>
-                    <span class="value" id="lastSeen">--</span>
-                </div>
-                
-                <h3 style="margin-top: 20px;">📱 Apps Used Today</h3>
-                <div id="appList" class="app-list-container">
-                    <div class="app-item">Waiting for data...</div>
+
+                <div class="card apps-card" style="margin-top: 20px;">
+                    <h2>⏳ Apps Used Today</h2>
+                    <div id="appList" class="app-list-container">
+                        <div class="app-item">Waiting for data...</div>
+                    </div>
                 </div>
             </div>
         </div>
