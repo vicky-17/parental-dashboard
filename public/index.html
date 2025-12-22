@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G4 Parental Monitor</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>👶 G4 Monitor Dashboard</h1>
+            <div id="status-indicator" class="status offline">Offline</div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card map-card">
+                <h2>📍 Live Location</h2>
+                <div id="map"></div>
+                <div class="map-controls">
+                    <button onclick="centerMap()">Recenter</button>
+                    <a id="gmaps-link" href="#" target="_blank" class="btn">Open in Google Maps</a>
+                </div>
+            </div>
+
+            <div class="card stats-card">
+                <h2>📱 Device Status</h2>
+                <div class="stat-item">
+                    <span class="label">Device ID</span>
+                    <span class="value" id="deviceId">Waiting...</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Battery</span>
+                    <span class="value" id="batteryLevel">--%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Last Seen</span>
+                    <span class="value" id="lastSeen">Never</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Charging</span>
+                    <span class="value" id="isCharging">--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <h2>📜 Location History (Last 10 updates)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Battery</th>
+                        <th>Location (Lat, Lng)</th>
+                        <th>Map</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
