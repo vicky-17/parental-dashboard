@@ -1,50 +1,43 @@
-// api/location.js
 const mongoose = require('mongoose');
 
-// 1. Connect to MongoDB (Replace with your actual Connection String)
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!mongoose.connection.readyState) {
     mongoose.connect(MONGODB_URI);
 }
 
-// 2. Define the Data Schema
+// Updated Schema
 const LocationSchema = new mongoose.Schema({
-        deviceId: String,
-        latitude: Number,
-        longitude: Number,
-        timestamp: { type: Date, default: Date.now },
-        batteryLevel: Number,
-        isCharging: Boolean,
-        lastApp: String
-    });
+    deviceId: String,
+    latitude: Number,
+    longitude: Number,
+    timestamp: { type: Date, default: Date.now },
+    batteryLevel: Number,
+    appUsage: [String] // Array of strings for app usage
+});
 
 const Location = mongoose.models.Location || mongoose.model('Location', LocationSchema);
 
-// 3. Handle the Request
 module.exports = async (req, res) => {
     if (req.method === 'POST') {
         try {
             const data = req.body;
-
-            // Save to Database
             const newLocation = new Location({
                 deviceId: data.deviceId,
                 latitude: data.latitude,
                 longitude: data.longitude,
                 batteryLevel: data.batteryLevel,
-                isCharging: data.isCharging,
-                lastApp: data.lastApp
+                appUsage: data.appUsage
             });
 
             await newLocation.save();
-            res.status(200).json({ status: 'Data Saved' });
+            res.status(200).json({ status: 'Saved' });
         } catch (error) {
-            res.status(500).json({ error: 'Database Error' });
+            res.status(500).json({ error: error.message });
         }
     } else {
-        // If someone opens the URL in a browser (GET request), show latest data
-        const logs = await Location.find().sort({ timestamp: -1 }).limit(10);
+        // GET Request: Return latest 20 logs
+        const logs = await Location.find().sort({ timestamp: -1 }).limit(20);
         res.status(200).json(logs);
     }
 };

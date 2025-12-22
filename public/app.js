@@ -1,92 +1,73 @@
-// Map Initialization (Default view: World)
+// Initialize Map
 const map = L.map('map').setView([0, 0], 2);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+    attribution: '© OpenStreetMap'
 }).addTo(map);
 
-let marker; // To store the single marker
+let marker;
+let firstZoom = true; // To track if we should zoom in initially
 
 async function fetchData() {
     try {
-        // 1. Fetch data from YOUR existing Vercel API
-        const response = await fetch('/api/location'); 
+        const response = await fetch('/api/location');
         const data = await response.json();
 
         if (!data || data.length === 0) {
-            document.getElementById('status-indicator').innerText = "No Data Yet";
+            document.getElementById('status-indicator').innerText = "Waiting for data...";
             return;
         }
 
-        const latest = data[0]; // The most recent log
+        const latest = data[0];
 
-        // 2. Update Stats Panel
+        // 1. Update Basic Stats (Real Battery)
         document.getElementById('deviceId').innerText = latest.deviceId || "Unknown";
-        document.getElementById('batteryLevel').innerText = (latest.batteryLevel || "--") + "%";
-        document.getElementById('isCharging').innerText = latest.isCharging ? "⚡ Yes" : "No";
-        
-        // Format Date
-        const date = new Date(latest.timestamp);
-        document.getElementById('lastSeen').innerText = date.toLocaleString();
+        document.getElementById('batteryLevel').innerText = latest.batteryLevel + "%";
+        document.getElementById('lastSeen').innerText = new Date(latest.timestamp).toLocaleTimeString();
 
-        // 3. Update Status Indicator (Online if seen < 5 mins ago)
-        const now = new Date();
-        const diffMinutes = (now - date) / 1000 / 60;
-        const statusEl = document.getElementById('status-indicator');
-        if (diffMinutes < 5) {
-            statusEl.className = "status online";
-            statusEl.innerText = "Online";
-        } else {
-            statusEl.className = "status offline";
-            statusEl.innerText = "Offline (" + Math.round(diffMinutes) + "m ago)";
-        }
-
-        // 4. Update Map
+        // 2. Map & Location Logic
         const lat = latest.latitude;
         const lng = latest.longitude;
 
         if (lat && lng) {
-            // Update Google Maps Link
-            document.getElementById('gmaps-link').href = `https://www.google.com/maps?q=${lat},${lng}`;
-
-            // Move Marker
+            // Update Marker
             if (marker) {
                 marker.setLatLng([lat, lng]);
             } else {
                 marker = L.marker([lat, lng]).addTo(map);
             }
-            
-            // Only center map on the very first load to avoid annoying the user
-            // if (firstLoad) { map.setView([lat, lng], 15); firstLoad = false; }
+
+            // ZOOM to location (Auto-center)
+            // If it's the first load, or if you want it to always follow the child:
+            map.setView([lat, lng], 16); // 16 is a high zoom level (street view)
+
+            // 3. Get Human Readable Address (Reverse Geocoding)
+            // We use OpenStreetMap Nominatim API (Free)
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                .then(res => res.json())
+                .then(addressData => {
+                    const address = addressData.display_name || "Unknown Location";
+                    // Display this address in the UI (You need to add an element with ID 'addressField' in index.html)
+                    if(document.getElementById('addressField')) {
+                        document.getElementById('addressField').innerText = address;
+                    }
+                });
         }
 
-        // 5. Update History Table
-        const tableBody = document.getElementById('history-table-body');
-        tableBody.innerHTML = ''; // Clear old data
-        
-        data.forEach(log => {
-            const row = `
-                <tr>
-                    <td>${new Date(log.timestamp).toLocaleTimeString()}</td>
-                    <td>${log.batteryLevel}%</td>
-                    <td>${log.latitude.toFixed(5)}, ${log.longitude.toFixed(5)}</td>
-                    <td><a href="https://www.google.com/maps?q=${log.latitude},${log.longitude}" target="_blank">View</a></td>
-                </tr>
-            `;
-            tableBody.innerHTML += row;
-        });
+        // 4. Update App Usage List
+        const appListContainer = document.getElementById('appList');
+        if (latest.appUsage && latest.appUsage.length > 0) {
+            appListContainer.innerHTML = latest.appUsage
+                .map(app => `<div class="app-item">${app}</div>`)
+                .join('');
+        } else {
+            appListContainer.innerHTML = "<div class='app-item'>No usage data yet</div>";
+        }
 
     } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error:", error);
     }
 }
 
-// Center map button logic
-function centerMap() {
-    if (marker) {
-        map.setView(marker.getLatLng(), 15);
-    }
-}
-
-// Auto-refresh every 5 seconds
-setInterval(fetchData, 5000);
-fetchData(); // Run immediately on load
+// Refresh every 10 seconds (Dashboard doesn't need to ping as fast as the phone sends)
+setInterval(fetchData, 10000);
+fetchData();

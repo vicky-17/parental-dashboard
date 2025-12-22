@@ -4,33 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>G4 Parental Monitor</title>
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Add specific style for the app list here or in style.css */
+        .app-list-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .app-item {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.9rem;
+        }
+        #addressField {
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 10px;
+            display: block;
+        }
+    </style>
 </head>
 <body>
 
     <div class="container">
         <header>
             <h1>👶 G4 Monitor Dashboard</h1>
-            <div id="status-indicator" class="status offline">Offline</div>
+            <div id="status-indicator" class="status">Loading...</div>
         </header>
 
         <div class="dashboard-grid">
             <div class="card map-card">
-                <h2>📍 Live Location</h2>
+                <h2>📍 Current Location</h2>
+                <span id="addressField">Locating...</span>
                 <div id="map"></div>
-                <div class="map-controls">
-                    <button onclick="centerMap()">Recenter</button>
-                    <a id="gmaps-link" href="#" target="_blank" class="btn">Open in Google Maps</a>
-                </div>
             </div>
 
             <div class="card stats-card">
                 <h2>📱 Device Status</h2>
                 <div class="stat-item">
                     <span class="label">Device ID</span>
-                    <span class="value" id="deviceId">Waiting...</span>
+                    <span class="value" id="deviceId">--</span>
                 </div>
                 <div class="stat-item">
                     <span class="label">Battery</span>
@@ -38,29 +55,14 @@
                 </div>
                 <div class="stat-item">
                     <span class="label">Last Seen</span>
-                    <span class="value" id="lastSeen">Never</span>
+                    <span class="value" id="lastSeen">--</span>
                 </div>
-                <div class="stat-item">
-                    <span class="label">Charging</span>
-                    <span class="value" id="isCharging">--</span>
+                
+                <h3 style="margin-top: 20px;">📱 Apps Used Today</h3>
+                <div id="appList" class="app-list-container">
+                    <div class="app-item">Waiting for data...</div>
                 </div>
             </div>
-        </div>
-
-        <div class="card history-card">
-            <h2>📜 Location History (Last 10 updates)</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Battery</th>
-                        <th>Location (Lat, Lng)</th>
-                        <th>Map</th>
-                    </tr>
-                </thead>
-                <tbody id="history-table-body">
-                    </tbody>
-            </table>
         </div>
     </div>
 
