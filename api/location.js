@@ -10,13 +10,14 @@ if (!mongoose.connection.readyState) {
 
 // 2. Define the Data Schema
 const LocationSchema = new mongoose.Schema({
-    deviceId: String,
-    latitude: Number,
-    longitude: Number,
-    timestamp: { type: Date, default: Date.now },
-    batteryLevel: Number,
-    isCharging: Boolean
-});
+        deviceId: String,
+        latitude: Number,
+        longitude: Number,
+        timestamp: { type: Date, default: Date.now },
+        batteryLevel: Number,
+        isCharging: Boolean,
+        lastApp: String
+    });
 
 const Location = mongoose.models.Location || mongoose.model('Location', LocationSchema);
 
@@ -32,7 +33,8 @@ module.exports = async (req, res) => {
                 latitude: data.latitude,
                 longitude: data.longitude,
                 batteryLevel: data.batteryLevel,
-                isCharging: data.isCharging
+                isCharging: data.isCharging,
+                lastApp: data.lastApp
             });
 
             await newLocation.save();
