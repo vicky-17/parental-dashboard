@@ -6,88 +6,71 @@
     <title>G4 Parental Monitor</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
-    <style>
-        .app-list-container {
-            max-height: 300px; /* Made slightly taller */
-            overflow-y: auto;
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 8px;
-        }
-        .app-item {
-            display: flex;
-            justify-content: space-between; /* To separate Name and Time */
-            padding: 8px 5px;
-            border-bottom: 1px solid #ddd;
-            font-size: 0.95rem;
-        }
-        .app-time {
-            font-weight: bold;
-            color: #2563eb;
-        }
-        #addressField {
-            font-weight: bold;
-            color: #2563eb;
-            margin-bottom: 10px;
-            display: block;
-        }
-        /* Button style adjustment */
-        .btn-map {
-            margin-top: 10px;
-            display: inline-block;
-            background: #34a853; /* Google Maps Greenish color */
-            color: white;
-            padding: 8px 15px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 0.9rem;
-        }
-        .btn-map:hover { background: #2e8b46; }
-    </style>
 </head>
 <body>
 
     <div class="container">
         <header>
             <h1>👶 G4 Monitor Dashboard</h1>
-            <div id="status-indicator" class="status">Loading...</div>
+            <div id="status-indicator" class="status">Connecting...</div>
         </header>
 
         <div class="dashboard-grid">
-            <div class="left-col">
-                <div class="card map-card">
-                    <h2>📍 Current Location</h2>
-                    <span id="addressField">Locating...</span>
-                    <div id="map"></div>
-                    <a id="googleMapsBtn" href="#" target="_blank" class="btn-map">Open in Google Maps</a>
+            
+            <div class="card stats-card">
+                <h2>📱 Device Status</h2>
+                <div class="stat-item">
+                    <span class="label">Device ID</span>
+                    <span class="value" id="deviceId">Scanning...</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Battery</span>
+                    <span class="value" id="batteryLevel">--%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Last Seen</span>
+                    <span class="value" id="lastSeen">--</span>
                 </div>
             </div>
 
-            <div class="right-col">
-                <div class="card stats-card">
-                    <h2>📱 Device Status</h2>
-                    <div class="stat-item">
-                        <span class="label">Device ID</span>
-                        <span class="value" id="deviceId">--</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">Battery</span>
-                        <span class="value" id="batteryLevel">--%</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">Last Seen</span>
-                        <span class="value" id="lastSeen">--</span>
-                    </div>
+            <div class="card settings-card">
+                <h2>⚙️ Tracking Settings</h2>
+                <p class="desc">Control how often the child's phone reports location.</p>
+                
+                <div class="form-group">
+                    <label for="intervalSelect">Update Interval:</label>
+                    <select id="intervalSelect">
+                        <option value="60000">Every 1 Minute</option>
+                        <option value="300000">Every 5 Minutes</option>
+                        <option value="600000">Every 10 Minutes</option>
+                        <option value="1800000">Every 30 Minutes</option>
+                    </select>
                 </div>
-
-                <div class="card apps-card" style="margin-top: 20px;">
-                    <h2>⏳ Apps Used Today</h2>
-                    <div id="appList" class="app-list-container">
-                        <div class="app-item">Waiting for data...</div>
-                    </div>
-                </div>
+                
+                <button onclick="saveSettings()" class="btn-save" id="saveBtn">Save Settings</button>
+                <span id="saveStatus" style="font-size: 0.8rem; margin-left: 10px;"></span>
             </div>
         </div>
+
+        <div class="card map-card full-width">
+            <div class="map-header">
+                <h2>📍 Location History</h2>
+                <span id="addressField">Locating address...</span>
+            </div>
+            <div id="map"></div>
+            <div class="map-controls">
+                <a id="googleMapsBtn" href="#" target="_blank" class="btn-map">Open Latest in Google Maps</a>
+                <span class="legend"><span class="dot-latest"></span> Latest <span class="dot-history"></span> History</span>
+            </div>
+        </div>
+
+        <div class="card apps-card full-width" style="margin-top: 20px;">
+            <h2>⏳ Last Known App Usage</h2>
+            <div id="appList" class="app-list-container">
+                <div class="app-item">Waiting for data...</div>
+            </div>
+        </div>
+
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
