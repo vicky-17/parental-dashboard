@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parent Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <h2>👨‍👩‍👧‍👦 Family Monitor</h2>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <div class="container">
+        <div class="card control-panel">
+            <select id="deviceSelect" onchange="switchDevice()">
+                <option value="">Select a Child...</option>
+            </select>
+            <button onclick="openPairingModal()" class="btn-add">+ Add New Device</button>
+        </div>
+
+        <div id="pairingModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h3>Connect a Child's Phone</h3>
+                <p>Enter this code in the G4 App on the child's phone:</p>
+                <h1 id="generatedCode">...</h1>
+                <button onclick="closeModal()">Done</button>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card stats-card">
+                <h3>Status</h3>
+                <p>Battery: <span id="battery">--</span>%</p>
+                <p>Last Seen: <span id="lastSeen">--</span></p>
+            </div>
+            <div class="card map-card full-width">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
