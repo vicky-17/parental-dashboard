@@ -1,48 +1,65 @@
 const mongoose = require('mongoose');
+const dbConnect = require('./db');
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!mongoose.connection.readyState) {
-    mongoose.connect(MONGODB_URI);
-}
-
-// Updated Schema to support App Usage with Time
+// --- 1. PERFECT SCHEMA ---
 const LocationSchema = new mongoose.Schema({
-    deviceId: String,
-    latitude: Number,
-    longitude: Number,
-    timestamp: { type: Date, default: Date.now },
-    batteryLevel: Number,
-    // Changed from [String] to Array of Objects to store time for sorting
+    deviceId: { type: String, required: true, index: true },
+    latitude: { type: Number, required: true },
+    longitude: { type: Number, required: true },
+    timestamp: { type: Date, default: Date.now, index: true }, // Index for sorting history
+    batteryLevel: { type: Number },
+    
+    // Flexible App Usage Schema
     appUsage: [{
         name: String,
-        duration: String, // e.g., "1h 30m" (for display)
-        minutes: Number   // e.g., 90 (for sorting)
-    }] 
+        duration: String,
+        minutes: Number
+    }]
 });
 
 const Location = mongoose.models.Location || mongoose.model('Location', LocationSchema);
 
+// --- 2. ROBUST HANDLER ---
 module.exports = async (req, res) => {
-    if (req.method === 'POST') {
-        try {
+    await dbConnect();
+
+    try {
+        if (req.method === 'POST') {
+            // --- SAVE LOCATION (From Android) ---
             const data = req.body;
+
+            // Log raw data for debugging (Check Vercel Function Logs for this!)
+            console.log(`[LOCATION POST] Received from ${data.deviceId} | Bat: ${data.batteryLevel}%`);
+
+            if (!data.latitude || !data.longitude) {
+                console.error("[LOCATION ERROR] Missing coordinates");
+                return res.status(400).json({ error: "Missing lat/lng" });
+            }
+
             const newLocation = new Location({
                 deviceId: data.deviceId,
                 latitude: data.latitude,
                 longitude: data.longitude,
                 batteryLevel: data.batteryLevel,
-                appUsage: data.appUsage // Expecting [{name: "Youtube", duration: "10m", minutes: 10}, ...]
+                appUsage: data.appUsage || [] // Default to empty array if missing
             });
 
             await newLocation.save();
-            res.status(200).json({ status: 'Saved' });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
+            return res.status(200).json({ status: 'Saved', id: newLocation._id });
+
+        } else if (req.method === 'GET') {
+            // --- GET HISTORY (For Dashboard) ---
+            // Sort by newest first, limit to last 50 points
+            const logs = await Location.find()
+                .sort({ timestamp: -1 })
+                .limit(50);
+            
+            return res.status(200).json(logs);
+        } else {
+            return res.status(405).json({ error: "Method not allowed" });
         }
-    } else {
-        // GET Request: Return latest 20 logs
-        const logs = await Location.find().sort({ timestamp: -1 }).limit(20);
-        res.status(200).json(logs);
+    } catch (error) {
+        console.error("[LOCATION SERVER ERROR]", error);
+        return res.status(500).json({ error: error.message });
     }
 };
