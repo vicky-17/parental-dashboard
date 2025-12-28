@@ -3,25 +3,26 @@ if(!USER_ID) window.location.href = '/index.html';
 
 let map = L.map('map').setView([0,0], 2);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-let markers = L.layerGroup().addTo(map);
 
 let currentDeviceId = null;
-let currentAppsData = []; // Store app data locally for editing
+let currentAppsData = []; 
 
 // 1. Load Device List
 async function loadDevices() {
-    const res = await fetch(`/api/devices?action=list&userId=${USER_ID}`);
-    const devices = await res.json();
-    
-    const select = document.getElementById('deviceSelect');
-    select.innerHTML = '<option value="">Select a Child...</option>';
-    
-    devices.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d._id;
-        opt.innerText = d.name;
-        select.appendChild(opt);
-    });
+    try {
+        const res = await fetch(`/api/devices?action=list&userId=${USER_ID}`);
+        const devices = await res.json();
+        
+        const select = document.getElementById('deviceSelect');
+        select.innerHTML = '<option value="">Select a Child...</option>';
+        
+        devices.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d._id;
+            opt.innerText = d.name;
+            select.appendChild(opt);
+        });
+    } catch (e) { console.error("Error loading devices", e); }
 }
 
 // 2. Switch Device & Load Data
@@ -41,7 +42,7 @@ async function switchDevice() {
     if (data.settings) {
         document.getElementById('locInterval').value = data.settings.locationInterval || 60000;
         document.getElementById('appInterval').value = data.settings.appSyncInterval || 300000;
-        updateMap([data.settings]); // Just to update status text if needed
+        updateMap([data.settings]); 
     }
 }
 
@@ -50,7 +51,7 @@ function renderAppList(apps) {
     const container = document.getElementById('appList');
     container.innerHTML = '';
 
-    if(apps.length === 0) {
+    if(!apps || apps.length === 0) {
         container.innerHTML = '<p>No apps synced yet. Waiting for phone...</p>';
         return;
     }
@@ -95,7 +96,6 @@ function renderAppList(apps) {
     });
 }
 
-// Helper to render the list of schedules for an app
 function renderSchedules(schedules, appIndex) {
     if (!schedules || schedules.length === 0) return '<p class="no-sched">No active schedules</p>';
 
@@ -112,7 +112,7 @@ function renderSchedules(schedules, appIndex) {
             <div class="day-picker">
                 ${[0,1,2,3,4,5,6].map(d => {
                     const days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-                    const isActive = sched.days.includes(d);
+                    const isActive = sched.days && sched.days.includes(d);
                     return `<span class="day-bubble ${isActive ? 'active' : ''}" 
                             onclick="toggleDay(${appIndex}, ${sIndex}, ${d})">${days[d]}</span>`;
                 }).join('')}
@@ -122,7 +122,6 @@ function renderSchedules(schedules, appIndex) {
 }
 
 // --- APP DATA LOGIC ---
-
 async function toggleLock(ruleId, isLocked) {
     await saveRule(ruleId, { isLocked });
 }
@@ -131,7 +130,6 @@ async function updateLimit(ruleId, limit) {
     await saveRule(ruleId, { dailyLimit: parseInt(limit) });
 }
 
-// Saves changes for a specific rule to the server
 async function saveRule(ruleId, data) {
     try {
         await fetch(`/api/apps?deviceId=${currentDeviceId}`, {
@@ -140,27 +138,19 @@ async function saveRule(ruleId, data) {
             body: JSON.stringify({ ruleId, ...data })
         });
         console.log("Saved");
-    } catch (e) {
-        alert("Error saving rule");
-    }
+    } catch (e) { alert("Error saving rule"); }
 }
 
-// --- SCHEDULE LOGIC (Manipulating Local State then Saving) ---
-
+// --- SCHEDULE LOGIC ---
 async function toggleDay(appIndex, schedIndex, dayInt) {
     const app = currentAppsData[appIndex];
     const sched = app.schedules[schedIndex];
-    
-    // Toggle day presence
     if (sched.days.includes(dayInt)) {
         sched.days = sched.days.filter(d => d !== dayInt);
     } else {
         sched.days.push(dayInt);
     }
-    
-    // Re-render UI immediately for feedback
     renderAppList(currentAppsData);
-    // Save to DB
     await saveRule(app._id, { schedules: app.schedules });
 }
 
@@ -172,10 +162,11 @@ async function updateSchedule(appIndex, schedIndex, field, value) {
 
 async function addSchedule(appIndex) {
     const app = currentAppsData[appIndex];
+    if(!app.schedules) app.schedules = []; // Safety check
     app.schedules.push({
         startTime: "21:00",
         endTime: "07:00",
-        days: [0,1,2,3,4,5,6], // Default all days
+        days: [0,1,2,3,4,5,6],
         enabled: true
     });
     renderAppList(currentAppsData);
@@ -190,7 +181,6 @@ async function removeSchedule(appIndex, schedIndex) {
 }
 
 // --- GENERIC FUNCTIONS ---
-
 async function saveGlobalSettings() {
     if(!currentDeviceId) return;
     const locInt = document.getElementById('locInterval').value;
@@ -211,8 +201,46 @@ function logout() {
     window.location.href = '/index.html';
 }
 
-// Modal Logic
-function openPairingModal() { document.getElementById('pairingModal').style.display = 'flex'; }
-function closeModal() { document.getElementById('pairingModal').style.display = 'none'; }
+// --- PAIRING LOGIC (FIXED) ---
+
+function openPairingModal() {
+    const modal = document.getElementById('pairingModal');
+    modal.style.display = 'flex';
+    
+    // Call the API immediately to get a code
+    generatePairingCode();
+}
+
+async function generatePairingCode() {
+    const codeDisplay = document.getElementById('generatedCode');
+    codeDisplay.innerText = "Loading...";
+
+    try {
+        // Send User ID to link the new device to this account
+        const res = await fetch(`/api/devices?action=generate_code`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ userId: USER_ID, name: "Child Device" }) 
+        });
+
+        const data = await res.json();
+        
+        if (data.code) {
+            codeDisplay.innerText = data.code;
+            // Optionally reload devices list in background so it appears when they close modal
+            loadDevices(); 
+        } else {
+            codeDisplay.innerText = "Error";
+        }
+    } catch (error) {
+        console.error("Pairing Error:", error);
+        codeDisplay.innerText = "Failed";
+    }
+}
+
+function closeModal() {
+    document.getElementById('pairingModal').style.display = 'none';
+    loadDevices(); // Refresh list to see if the new device appeared
+}
 
 loadDevices();
