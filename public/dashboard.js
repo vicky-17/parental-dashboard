@@ -44,15 +44,56 @@ function closeModal() {
     loadDevices();
 }
 
-// 3. Switch Device & Load Data
-async function switchDevice() {
-    const deviceId = document.getElementById('deviceSelect').value;
-    if(!deviceId) return;
 
-    const res = await fetch(`/api/location?deviceId=${deviceId}`);
-    const logs = await res.json();
+// 1. LOAD SETTINGS
+async function switchDevice() {
+    currentDeviceId = document.getElementById('deviceSelect').value;
+    if(!currentDeviceId) return;
+
+    // A. Load App List (Rules)
+    const resApps = await fetch(`/api/apps?deviceId=${currentDeviceId}`);
+    const apps = await resApps.json();
+    renderAppList(apps);
+
+    // B. Load Global Settings (Intervals)
+    const resSettings = await fetch(`/api/settings?deviceId=${currentDeviceId}`);
+    const data = await resSettings.json();
     
-    updateMap(logs);
+    // Update the UI inputs with current database values
+    if (data.settings) {
+        document.getElementById('locInterval').value = data.settings.locationInterval || 60000;
+        document.getElementById('appInterval').value = data.settings.appSyncInterval || 300000;
+        currentSettings = data.settings;
+    }
+}
+
+// 2. SAVE SETTINGS (The Time Gaps)
+async function saveGlobalSettings() {
+    if(!currentDeviceId) return;
+
+    const locInt = document.getElementById('locInterval').value;
+    const appInt = document.getElementById('appInterval').value;
+    const btn = document.getElementById('btnSaveSettings');
+
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    try {
+        await fetch(`/api/settings?deviceId=${currentDeviceId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                locationInterval: locInt,
+                appSyncInterval: appInt
+            })
+        });
+        alert("✅ Intervals Updated! Phone will sync shortly.");
+    } catch (e) {
+        alert("❌ Error: " + e.message);
+    } finally {
+        btn.innerText = "Save Intervals";
+        btn.disabled = false;
+    }
 }
 
 function updateMap(logs) {

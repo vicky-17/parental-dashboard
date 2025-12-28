@@ -1,76 +1,60 @@
 const mongoose = require('mongoose');
-const dbConnect = require('./db'); // Import our new helper
+const dbConnect = require('./db');
+const Device = require('../models/Device');
+const AppRule = require('../models/Apps');
 
-// --- 1. PERFECT SCHEMA ---
-const SettingsSchema = new mongoose.Schema({
-    deviceId: { 
-        type: String, 
-        required: [true, "Device ID is required"], 
-        unique: true,
-        trim: true,
-        index: true // Faster lookups
-    },
-    locationInterval: { 
-        type: Number, 
-        default: 60000, 
-        min: [5000, "Interval must be at least 5 seconds"] 
-    },
-    lastModified: { 
-        type: Number, 
-        default: () => Date.now() 
-    }
-});
-
-// Prevent model recompilation error in serverless
-const Settings = mongoose.models.Settings || mongoose.model('Settings', SettingsSchema);
-
-// --- 2. ROBUST HANDLER ---
 module.exports = async (req, res) => {
-    await dbConnect(); // Ensure DB is connected
-
+    await dbConnect();
     const { deviceId } = req.query;
 
-    try {
-        if (req.method === 'POST') {
-            // --- UPDATE SETTINGS (From Dashboard) ---
-            if (!deviceId) return res.status(400).json({ error: "Missing deviceId" });
+    if (!deviceId) return res.status(400).json({ error: "Missing Device ID" });
 
-            const { locationInterval } = req.body;
+    // --- GET: Called by Android Phone & Dashboard (Load) ---
+    if (req.method === 'GET') {
+        try {
+            // 1. Get Global Device Settings
+            const device = await Device.findById(deviceId);
+            if (!device) return res.status(404).json({ error: "Device not found" });
 
-            const updatedSettings = await Settings.findOneAndUpdate(
-                { deviceId: deviceId },
-                { 
-                    locationInterval: locationInterval,
-                    lastModified: Date.now() 
+            // 2. Get App Rules (Only specific fields needed for blocking)
+            const rules = await AppRule.find({ deviceId })
+                .select('packageName isLocked dailyLimit schedules');
+
+            // 3. Send Combined Data
+            return res.status(200).json({
+                settings: {
+                    locationInterval: device.locationInterval,
+                    appSyncInterval: device.appSyncInterval,
+                    lastModified: device.lastModified
                 },
-                { upsert: true, new: true, setDefaultsOnInsert: true }
+                rules: rules // The list of locked/limited apps
+            });
+        } catch (e) {
+            return res.status(500).json({ error: e.message });
+        }
+    }
+
+    // --- POST: Called by Dashboard (Save Intervals) ---
+    if (req.method === 'POST') {
+        try {
+            const { locationInterval, appSyncInterval } = req.body;
+
+            // Update the Device document with new intervals & timestamp
+            const updatedDevice = await Device.findByIdAndUpdate(
+                deviceId,
+                {
+                    locationInterval: parseInt(locationInterval),
+                    appSyncInterval: parseInt(appSyncInterval),
+                    lastModified: Date.now() // Trigger phone sync
+                },
+                { new: true }
             );
 
-            console.log(`[SETTINGS] Updated for ${deviceId}: ${locationInterval}ms`);
-            return res.status(200).json(updatedSettings);
-
-        } else if (req.method === 'GET') {
-            // --- FETCH SETTINGS (From Android App) ---
-            if (!deviceId) return res.status(400).json({ error: "Missing deviceId" });
-
-            let settings = await Settings.findOne({ deviceId: deviceId });
-
-            // If no settings exist yet, create defaults
-            if (!settings) {
-                console.log(`[SETTINGS] Creating new default profile for ${deviceId}`);
-                settings = await Settings.create({
-                    deviceId: deviceId,
-                    locationInterval: 60000,
-                    lastModified: Date.now()
-                });
-            }
-
-            return res.status(200).json(settings);
-        } else {
-            return res.status(405).json({ error: "Method not allowed" });
+            return res.status(200).json(updatedDevice);
+        } catch (e) {
+            return res.status(500).json({ error: e.message });
         }
-    } catch (error) {
-        console.error("[SETTINGS ERROR]", error);
-        return res.status(500).json({ error: error.message });
     }
+
+    return res.status(405).json({ error: "Method not allowed" });
 };

@@ -38,6 +38,32 @@
                 <div id="map"></div>
             </div>
         </div>
+
+        <div class="card settings-card">
+    <h3>⚙️ Sync Settings</h3>
+    <p class="desc">Control how often the phone sends data.</p>
+    
+    <div class="form-group">
+        <label>Location Update Every (ms):</label>
+        <select id="locInterval">
+            <option value="60000">1 Minute</option>
+            <option value="300000">5 Minutes</option>
+            <option value="900000">15 Minutes</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>App Usage Sync Every (ms):</label>
+        <select id="appInterval">
+            <option value="300000">5 Minutes</option>
+            <option value="900000">15 Minutes</option>
+            <option value="1800000">30 Minutes</option>
+        </select>
+    </div>
+
+    <button id="btnSaveSettings" onclick="saveGlobalSettings()" class="btn-primary">Save Intervals</button>
+</div>
+
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
