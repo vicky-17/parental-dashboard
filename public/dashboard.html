@@ -4,6 +4,7 @@
     <title>Parent Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="navbar">
@@ -39,31 +40,33 @@
             </div>
         </div>
 
-        <div class="card settings-card">
-    <h3>⚙️ Sync Settings</h3>
-    <p class="desc">Control how often the phone sends data.</p>
-    
-    <div class="form-group">
-        <label>Location Update Every (ms):</label>
-        <select id="locInterval">
-            <option value="60000">1 Minute</option>
-            <option value="300000">5 Minutes</option>
-            <option value="900000">15 Minutes</option>
-        </select>
-    </div>
+        <div class="card app-management">
+            <h3>📱 App Rules & Usage</h3>
+            <p class="desc">Manage limits, locks, and schedules for each app.</p>
+            <div id="appList" class="app-grid">
+                <p>Select a device to view apps.</p>
+            </div>
+        </div>
 
-    <div class="form-group">
-        <label>App Usage Sync Every (ms):</label>
-        <select id="appInterval">
-            <option value="300000">5 Minutes</option>
-            <option value="900000">15 Minutes</option>
-            <option value="1800000">30 Minutes</option>
-        </select>
-    </div>
-
-    <button id="btnSaveSettings" onclick="saveGlobalSettings()" class="btn-primary">Save Intervals</button>
-</div>
-
+        <div class="card settings-card" style="margin-top: 20px;">
+            <h3>⚙️ Sync Settings</h3>
+            <div class="form-group">
+                <label>Location Update Interval:</label>
+                <select id="locInterval">
+                    <option value="60000">1 Minute</option>
+                    <option value="300000">5 Minutes</option>
+                    <option value="900000">15 Minutes</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>App Sync Interval:</label>
+                <select id="appInterval">
+                    <option value="300000">5 Minutes</option>
+                    <option value="900000">15 Minutes</option>
+                </select>
+            </div>
+            <button id="btnSaveSettings" onclick="saveGlobalSettings()" class="btn-primary">Save Intervals</button>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
